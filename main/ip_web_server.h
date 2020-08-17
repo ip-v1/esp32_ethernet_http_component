@@ -18,7 +18,7 @@
 
 #include <esp_http_server.h>
 
-static const char *TAG = "Jelly Fish";
+
 
 static esp_err_t hello_get_handler(httpd_req_t *req);
 static esp_err_t echo_post_handler(httpd_req_t *req);
