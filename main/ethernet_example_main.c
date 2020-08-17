@@ -29,7 +29,7 @@
 static const char *TAG = "Jelly Fish";
 
 /* An HTTP GET handler */
-static esp_err_t hello_get_handler(httpd_req_t *req)
+static esp_err_t info_get_handler(httpd_req_t *req)
 {
     char*  buf;
     size_t buf_len;
@@ -103,13 +103,15 @@ static esp_err_t hello_get_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-static const httpd_uri_t hello = {
-    .uri       = "/hello",
+const char info_page[]="Test Info Message";
+
+static const httpd_uri_t info = {
+    .uri       = "/info",
     .method    = HTTP_GET,
-    .handler   = hello_get_handler,
+    .handler   = info_get_handler,
     /* Let's pass response string in user
      * context to demonstrate it's usage */
-    .user_ctx  = "Hello World!"
+    .user_ctx  = info_page
 };
 
 /* An HTTP POST handler */
@@ -153,19 +155,19 @@ static const httpd_uri_t echo = {
 
 /* This handler allows the custom error handling functionality to be
  * tested from client side. For that, when a PUT request 0 is sent to
- * URI /ctrl, the /hello and /echo URIs are unregistered and following
+ * URI /ctrl, the /info and /echo URIs are unregistered and following
  * custom error handler http_404_error_handler() is registered.
- * Afterwards, when /hello or /echo is requested, this custom error
+ * Afterwards, when /info or /echo is requested, this custom error
  * handler is invoked which, after sending an error message to client,
  * either closes the underlying socket (when requested URI is /echo)
- * or keeps it open (when requested URI is /hello). This allows the
+ * or keeps it open (when requested URI is /info). This allows the
  * client to infer if the custom error handler is functioning as expected
  * by observing the socket state.
  */
 esp_err_t http_404_error_handler(httpd_req_t *req, httpd_err_code_t err)
 {
-    if (strcmp("/hello", req->uri) == 0) {
-        httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "/hello URI is not available");
+    if (strcmp("/info", req->uri) == 0) {
+        httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "/info URI is not available");
         /* Return ESP_OK to keep underlying socket open */
         return ESP_OK;
     } else if (strcmp("/echo", req->uri) == 0) {
@@ -195,15 +197,15 @@ static esp_err_t ctrl_put_handler(httpd_req_t *req)
 
     if (buf == '0') {
         /* URI handlers can be unregistered using the uri string */
-        ESP_LOGI(TAG, "Unregistering /hello and /echo URIs");
-        httpd_unregister_uri(req->handle, "/hello");
+        ESP_LOGI(TAG, "Unregistering /info and /echo URIs");
+        httpd_unregister_uri(req->handle, "/info");
         httpd_unregister_uri(req->handle, "/echo");
         /* Register the custom error handler */
         httpd_register_err_handler(req->handle, HTTPD_404_NOT_FOUND, http_404_error_handler);
     }
     else {
-        ESP_LOGI(TAG, "Registering /hello and /echo URIs");
-        httpd_register_uri_handler(req->handle, &hello);
+        ESP_LOGI(TAG, "Registering /info and /echo URIs");
+        httpd_register_uri_handler(req->handle, &info);
         httpd_register_uri_handler(req->handle, &echo);
         /* Unregister custom error handler */
         httpd_register_err_handler(req->handle, HTTPD_404_NOT_FOUND, NULL);
@@ -231,7 +233,7 @@ static httpd_handle_t start_webserver(void)
     if (httpd_start(&server, &config) == ESP_OK) {
         // Set URI handlers
         ESP_LOGI(TAG, "Registering URI handlers");
-        httpd_register_uri_handler(server, &hello);
+        httpd_register_uri_handler(server, &info);
         httpd_register_uri_handler(server, &echo);
         httpd_register_uri_handler(server, &ctrl);
         return server;
@@ -396,5 +398,5 @@ void app_main()
     ESP_ERROR_CHECK(esp_eth_start(eth_handle));
 
         /* Start the server for the first time */
-    // server = start_webserver();
+    server = start_webserver();
 }
