@@ -31,7 +31,7 @@ static const char *TAG = "Jelly Fish";
 typedef struct _InfoT{
     char sof;
     char ver[3];
-    char str[10];
+    char str[64];
 }InfoT;
 
 InfoT infoT;
@@ -120,7 +120,7 @@ static const httpd_uri_t info = {
     .handler   = info_get_handler,
     /* Let's pass response string in user
      * context to demonstrate it's usage */
-    .user_ctx  = info_page
+    .user_ctx  = infoT.str
 };
 
 /* An HTTP POST handler */
@@ -419,7 +419,7 @@ void app_main()
     ESP_ERROR_CHECK(esp_eth_start(eth_handle));
 
     xTaskCreate(&vTaskCode, "my task 1", 1024, NULL, 5, NULL);
-    sprintf(infoT.str, "Test");
+    sprintf(infoT.str, "Test String from Main");
         /* Start the server for the first time */
     server = start_webserver();
 }
