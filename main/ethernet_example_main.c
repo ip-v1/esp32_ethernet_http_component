@@ -459,6 +459,8 @@ void vTaskCode(void* pvParameters)
 void start_ethernet(void){
     // ESP_ERROR_CHECK(nvs_flash_init());
     // tcpip_adapter_init();
+
+    // uncomment this line if not using wifi because this must be run exactly once else all hell breaks loose.
     // ESP_ERROR_CHECK(esp_event_loop_create_default());
 
     /* This helper function configures Wi-Fi or Ethernet, as selected in menuconfig.
