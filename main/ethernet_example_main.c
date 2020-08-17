@@ -28,6 +28,15 @@
 
 static const char *TAG = "Jelly Fish";
 
+typedef struct _InfoT{
+    char sof;
+    char ver[3];
+    char str[10];
+}InfoT;
+
+InfoT infoT;
+
+
 /* An HTTP GET handler */
 static esp_err_t info_get_handler(httpd_req_t *req)
 {
@@ -316,6 +325,18 @@ static void got_ip_event_handler(void *arg, esp_event_base_t event_base,
     ESP_LOGI(TAG, "~~~~~~~~~~~");
 }
 
+
+void vTaskCode(void* pvParameters)
+{
+    for(;;)
+    {
+        // Task Code here
+        printf("%s\n", infoT.str);
+        vTaskDelay(1000/portTICK_PERIOD_MS);
+    }
+}
+
+
 void app_main()
 {
     static httpd_handle_t server = NULL;
@@ -397,6 +418,8 @@ void app_main()
     ESP_ERROR_CHECK(esp_eth_driver_install(&config, &eth_handle));
     ESP_ERROR_CHECK(esp_eth_start(eth_handle));
 
+    xTaskCreate(&vTaskCode, "my task 1", 1024, NULL, 5, NULL);
+    sprintf(infoT.str, "Test");
         /* Start the server for the first time */
     server = start_webserver();
 }
