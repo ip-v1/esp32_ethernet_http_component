@@ -563,11 +563,12 @@ void start_ethernet(void)
 }
 
 #define U1_TXD (GPIO_NUM_4)
-#define U1_RXD (GPIO_NUM_5)
+#define U1_RXD (GPIO_NUM_2)
 #define NC (UART_PIN_NO_CHANGE)
 
 void vTaskCode(void *pvParameters)
 {
+    // uint8_t data* = malloc(1024);
     for (;;)
     {
         static uint8_t state = 0;
@@ -580,19 +581,16 @@ void vTaskCode(void *pvParameters)
         };
         const char msg[] = "Hello World\n\r";
         // int len;
-        // uint8_t data[128];
         switch (state)
         {
         case 0: // init state
-            uart_driver_install(UART_NUM_1, 1024, 0, 0, NULL, 0);
+            uart_driver_install(UART_NUM_1, 2048, 0, 0, NULL, 0);
             uart_param_config(UART_NUM_1, &uart_config);
             ESP_ERROR_CHECK(uart_set_pin(UART_NUM_1, U1_TXD, U1_RXD, NC, NC));
-            // data = (malloc(1024));
             state = 1;
             break;
         case 1: // work state
-            // len = uart_read_bytes(UART_NUM_2, data, 2048, 20/portTICK_RATE_MS);
-
+            // len = uart_read_bytes(UART_NUM_2, data, 1024, 20/portTICK_RATE_MS);
             uart_write_bytes(UART_NUM_1, (const char *)msg, 13);
             vTaskDelay(1000 / portTICK_PERIOD_MS);
             break;
@@ -610,7 +608,7 @@ void vTaskCode(void *pvParameters)
 
 void start_task_test()
 {
-    xTaskCreate(&vTaskCode, "my task 1", 1024, NULL, 5, NULL);
+    xTaskCreate(&vTaskCode, "my task 1", 2048, NULL, 5, NULL);
     sprintf(infoT.str, "Test String from Main");
 }
 
@@ -619,6 +617,6 @@ void app_main()
     static httpd_handle_t server = NULL;
     start_wifi();
     start_ethernet();
-    // start_task_test();
+    start_task_test();
     server = start_webserver();
 }
