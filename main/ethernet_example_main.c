@@ -30,14 +30,16 @@
 
 #include <esp_http_server.h>
 
+#include "driver/uart.h"
+
 /* The examples use WiFi configuration that you can set via project configuration menu
 
    If you'd rather not, just change the below entries to strings with
    the config you want - ie #define EXAMPLE_WIFI_SSID "mywifissid"
 */
-#define EXAMPLE_ESP_WIFI_SSID      "ControlsDev"
-#define EXAMPLE_ESP_WIFI_PASS      "Blue3900"
-#define EXAMPLE_ESP_MAXIMUM_RETRY  5
+#define EXAMPLE_ESP_WIFI_SSID "ControlsDev"
+#define EXAMPLE_ESP_WIFI_PASS "Blue3900"
+#define EXAMPLE_ESP_MAXIMUM_RETRY 5
 
 /* FreeRTOS event group to signal when we are connected*/
 static EventGroupHandle_t s_wifi_event_group;
@@ -46,56 +48,60 @@ static EventGroupHandle_t s_wifi_event_group;
  * - we are connected to the AP with an IP
  * - we failed to connect after the maximum amount of retries */
 #define WIFI_CONNECTED_BIT BIT0
-#define WIFI_FAIL_BIT      BIT1
+#define WIFI_FAIL_BIT BIT1
 
 // static const char *TAG = "wifi station";
 
 static int s_retry_num = 0;
 
-
-
 static const char *TAG = "Jelly Fish";
 
-typedef struct _InfoT{
+typedef struct _InfoT
+{
     char sof;
     char ver[3];
     char str[64];
-}InfoT;
+} InfoT;
 
 InfoT infoT;
-
 
 /* An HTTP GET handler */
 static esp_err_t info_get_handler(httpd_req_t *req)
 {
-    char*  buf;
+    char *buf;
     size_t buf_len;
 
     /* Get header value string length and allocate memory for length + 1,
      * extra byte for null termination */
     buf_len = httpd_req_get_hdr_value_len(req, "Host") + 1;
-    if (buf_len > 1) {
+    if (buf_len > 1)
+    {
         buf = malloc(buf_len);
         /* Copy null terminated value string into buffer */
-        if (httpd_req_get_hdr_value_str(req, "Host", buf, buf_len) == ESP_OK) {
+        if (httpd_req_get_hdr_value_str(req, "Host", buf, buf_len) == ESP_OK)
+        {
             ESP_LOGI(TAG, "Found header => Host: %s", buf);
         }
         free(buf);
     }
 
     buf_len = httpd_req_get_hdr_value_len(req, "Test-Header-2") + 1;
-    if (buf_len > 1) {
+    if (buf_len > 1)
+    {
         buf = malloc(buf_len);
-        if (httpd_req_get_hdr_value_str(req, "Test-Header-2", buf, buf_len) == ESP_OK) {
+        if (httpd_req_get_hdr_value_str(req, "Test-Header-2", buf, buf_len) == ESP_OK)
+        {
             ESP_LOGI(TAG, "Found header => Test-Header-2: %s", buf);
         }
         free(buf);
     }
 
     buf_len = httpd_req_get_hdr_value_len(req, "Test-Header-1") + 1;
-    if (buf_len > 1) {
+    if (buf_len > 1)
+    {
         buf = malloc(buf_len);
-        if (httpd_req_get_hdr_value_str(req, "Test-Header-1", buf, buf_len) == ESP_OK) {
+        if (httpd_req_get_hdr_value_str(req, "Test-Header-1", buf, buf_len) == ESP_OK)
+        {
             ESP_LOGI(TAG, "Found header => Test-Header-1: %s", buf);
         }
         free(buf);
@@ -104,19 +110,24 @@ static esp_err_t info_get_handler(httpd_req_t *req)
     /* Read URL query string length and allocate memory for length + 1,
      * extra byte for null termination */
     buf_len = httpd_req_get_url_query_len(req) + 1;
-    if (buf_len > 1) {
+    if (buf_len > 1)
+    {
         buf = malloc(buf_len);
-        if (httpd_req_get_url_query_str(req, buf, buf_len) == ESP_OK) {
+        if (httpd_req_get_url_query_str(req, buf, buf_len) == ESP_OK)
+        {
             ESP_LOGI(TAG, "Found URL query => %s", buf);
             char param[32];
             /* Get value of expected key from query string */
-            if (httpd_query_key_value(buf, "query1", param, sizeof(param)) == ESP_OK) {
+            if (httpd_query_key_value(buf, "query1", param, sizeof(param)) == ESP_OK)
+            {
                 ESP_LOGI(TAG, "Found URL query parameter => query1=%s", param);
             }
-            if (httpd_query_key_value(buf, "query3", param, sizeof(param)) == ESP_OK) {
+            if (httpd_query_key_value(buf, "query3", param, sizeof(param)) == ESP_OK)
+            {
                 ESP_LOGI(TAG, "Found URL query parameter => query3=%s", param);
             }
-            if (httpd_query_key_value(buf, "query2", param, sizeof(param)) == ESP_OK) {
+            if (httpd_query_key_value(buf, "query2", param, sizeof(param)) == ESP_OK)
+            {
                 ESP_LOGI(TAG, "Found URL query parameter => query2=%s", param);
             }
         }
@@ -129,27 +140,27 @@ static esp_err_t info_get_handler(httpd_req_t *req)
 
     /* Send response with custom headers and body set as the
      * string passed in user context*/
-    const char* resp_str = (const char*) req->user_ctx;
+    const char *resp_str = (const char *)req->user_ctx;
     httpd_resp_send(req, resp_str, strlen(resp_str));
 
     /* After sending the HTTP response the old HTTP request
      * headers are lost. Check if HTTP request headers can be read now. */
-    if (httpd_req_get_hdr_value_len(req, "Host") == 0) {
+    if (httpd_req_get_hdr_value_len(req, "Host") == 0)
+    {
         ESP_LOGI(TAG, "Request headers lost");
     }
     return ESP_OK;
 }
 
-const char info_page[]="Test Info Message";
+const char info_page[] = "Test Info Message";
 
 static const httpd_uri_t info = {
-    .uri       = "/info",
-    .method    = HTTP_GET,
-    .handler   = info_get_handler,
+    .uri = "/info",
+    .method = HTTP_GET,
+    .handler = info_get_handler,
     /* Let's pass response string in user
      * context to demonstrate it's usage */
-    .user_ctx  = infoT.str
-};
+    .user_ctx = infoT.str};
 
 /* An HTTP POST handler */
 static esp_err_t echo_post_handler(httpd_req_t *req)
@@ -157,11 +168,14 @@ static esp_err_t echo_post_handler(httpd_req_t *req)
     char buf[100];
     int ret, remaining = req->content_len;
 
-    while (remaining > 0) {
+    while (remaining > 0)
+    {
         /* Read the data for the request */
         if ((ret = httpd_req_recv(req, buf,
-                        MIN(remaining, sizeof(buf)))) <= 0) {
-            if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
+                                  MIN(remaining, sizeof(buf)))) <= 0)
+        {
+            if (ret == HTTPD_SOCK_ERR_TIMEOUT)
+            {
                 /* Retry receiving if timeout occurred */
                 continue;
             }
@@ -184,11 +198,10 @@ static esp_err_t echo_post_handler(httpd_req_t *req)
 }
 
 static const httpd_uri_t echo = {
-    .uri       = "/echo",
-    .method    = HTTP_POST,
-    .handler   = echo_post_handler,
-    .user_ctx  = NULL
-};
+    .uri = "/echo",
+    .method = HTTP_POST,
+    .handler = echo_post_handler,
+    .user_ctx = NULL};
 
 /* This handler allows the custom error handling functionality to be
  * tested from client side. For that, when a PUT request 0 is sent to
@@ -203,11 +216,14 @@ static const httpd_uri_t echo = {
  */
 esp_err_t http_404_error_handler(httpd_req_t *req, httpd_err_code_t err)
 {
-    if (strcmp("/info", req->uri) == 0) {
+    if (strcmp("/info", req->uri) == 0)
+    {
         httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "/info URI is not available");
         /* Return ESP_OK to keep underlying socket open */
         return ESP_OK;
-    } else if (strcmp("/echo", req->uri) == 0) {
+    }
+    else if (strcmp("/echo", req->uri) == 0)
+    {
         httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "/echo URI is not available");
         /* Return ESP_FAIL to close underlying socket */
         return ESP_FAIL;
@@ -225,14 +241,17 @@ static esp_err_t ctrl_put_handler(httpd_req_t *req)
     char buf;
     int ret;
 
-    if ((ret = httpd_req_recv(req, &buf, 1)) <= 0) {
-        if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
+    if ((ret = httpd_req_recv(req, &buf, 1)) <= 0)
+    {
+        if (ret == HTTPD_SOCK_ERR_TIMEOUT)
+        {
             httpd_resp_send_408(req);
         }
         return ESP_FAIL;
     }
 
-    if (buf == '0') {
+    if (buf == '0')
+    {
         /* URI handlers can be unregistered using the uri string */
         ESP_LOGI(TAG, "Unregistering /info and /echo URIs");
         httpd_unregister_uri(req->handle, "/info");
@@ -240,7 +259,8 @@ static esp_err_t ctrl_put_handler(httpd_req_t *req)
         /* Register the custom error handler */
         httpd_register_err_handler(req->handle, HTTPD_404_NOT_FOUND, http_404_error_handler);
     }
-    else {
+    else
+    {
         ESP_LOGI(TAG, "Registering /info and /echo URIs");
         httpd_register_uri_handler(req->handle, &info);
         httpd_register_uri_handler(req->handle, &echo);
@@ -254,11 +274,10 @@ static esp_err_t ctrl_put_handler(httpd_req_t *req)
 }
 
 static const httpd_uri_t ctrl = {
-    .uri       = "/ctrl",
-    .method    = HTTP_PUT,
-    .handler   = ctrl_put_handler,
-    .user_ctx  = NULL
-};
+    .uri = "/ctrl",
+    .method = HTTP_PUT,
+    .handler = ctrl_put_handler,
+    .user_ctx = NULL};
 
 static httpd_handle_t start_webserver(void)
 {
@@ -267,7 +286,8 @@ static httpd_handle_t start_webserver(void)
 
     // Start the httpd server
     ESP_LOGI(TAG, "Starting server on port: '%d'", config.server_port);
-    if (httpd_start(&server, &config) == ESP_OK) {
+    if (httpd_start(&server, &config) == ESP_OK)
+    {
         // Set URI handlers
         ESP_LOGI(TAG, "Registering URI handlers");
         httpd_register_uri_handler(server, &info);
@@ -286,22 +306,24 @@ static void stop_webserver(httpd_handle_t server)
     httpd_stop(server);
 }
 
-static void disconnect_handler(void* arg, esp_event_base_t event_base, 
-                               int32_t event_id, void* event_data)
+static void disconnect_handler(void *arg, esp_event_base_t event_base,
+                               int32_t event_id, void *event_data)
 {
-    httpd_handle_t* server = (httpd_handle_t*) arg;
-    if (*server) {
+    httpd_handle_t *server = (httpd_handle_t *)arg;
+    if (*server)
+    {
         ESP_LOGI(TAG, "Stopping webserver");
         stop_webserver(*server);
         *server = NULL;
     }
 }
 
-static void connect_handler(void* arg, esp_event_base_t event_base, 
-                            int32_t event_id, void* event_data)
+static void connect_handler(void *arg, esp_event_base_t event_base,
+                            int32_t event_id, void *event_data)
 {
-    httpd_handle_t* server = (httpd_handle_t*) arg;
-    if (*server == NULL) {
+    httpd_handle_t *server = (httpd_handle_t *)arg;
+    if (*server == NULL)
+    {
         ESP_LOGI(TAG, "Starting webserver");
         *server = start_webserver();
     }
@@ -317,7 +339,8 @@ static void eth_event_handler(void *arg, esp_event_base_t event_base,
     /* we can get the ethernet driver handle from event data */
     esp_eth_handle_t eth_handle = *(esp_eth_handle_t *)event_data;
 
-    switch (event_id) {
+    switch (event_id)
+    {
     case ETHERNET_EVENT_CONNECTED:
         esp_eth_ioctl(eth_handle, ETH_CMD_G_MAC_ADDR, mac_addr);
         ESP_LOGI(TAG, "Ethernet Link Up");
@@ -342,7 +365,7 @@ static void eth_event_handler(void *arg, esp_event_base_t event_base,
 static void got_ip_event_handler(void *arg, esp_event_base_t event_base,
                                  int32_t event_id, void *event_data)
 {
-    ip_event_got_ip_t *event = (ip_event_got_ip_t *) event_data;
+    ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
     const tcpip_adapter_ip_info_t *ip_info = &event->ip_info;
 
     ESP_LOGI(TAG, "Ethernet Got IP Address");
@@ -353,23 +376,30 @@ static void got_ip_event_handler(void *arg, esp_event_base_t event_base,
     ESP_LOGI(TAG, "~~~~~~~~~~~");
 }
 
-
-static void event_handler(void* arg, esp_event_base_t event_base,
-                                int32_t event_id, void* event_data)
+static void event_handler(void *arg, esp_event_base_t event_base,
+                          int32_t event_id, void *event_data)
 {
-    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
+    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START)
+    {
         esp_wifi_connect();
-    } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        if (s_retry_num < EXAMPLE_ESP_MAXIMUM_RETRY) {
+    }
+    else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
+    {
+        if (s_retry_num < EXAMPLE_ESP_MAXIMUM_RETRY)
+        {
             esp_wifi_connect();
             s_retry_num++;
             ESP_LOGI(TAG, "retry to connect to the AP");
-        } else {
+        }
+        else
+        {
             xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
         }
-        ESP_LOGI(TAG,"connect to the AP fail");
-    } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
-        ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
+        ESP_LOGI(TAG, "connect to the AP fail");
+    }
+    else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
+    {
+        ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
         ESP_LOGI(TAG, "got ip:%s",
                  ip4addr_ntoa(&event->ip_info.ip));
         s_retry_num = 0;
@@ -397,33 +427,37 @@ void wifi_init_sta()
             .password = EXAMPLE_ESP_WIFI_PASS,
             .pmf_cfg = {
                 .capable = true,
-                .required = false
-            },
+                .required = false},
         },
     };
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
-    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config) );
-    ESP_ERROR_CHECK(esp_wifi_start() );
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
+    ESP_ERROR_CHECK(esp_wifi_start());
 
     ESP_LOGI(TAG, "wifi_init_sta finished.");
 
     /* Waiting until either the connection is established (WIFI_CONNECTED_BIT) or connection failed for the maximum
      * number of re-tries (WIFI_FAIL_BIT). The bits are set by event_handler() (see above) */
     EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group,
-            WIFI_CONNECTED_BIT | WIFI_FAIL_BIT,
-            pdFALSE,
-            pdFALSE,
-            portMAX_DELAY);
+                                           WIFI_CONNECTED_BIT | WIFI_FAIL_BIT,
+                                           pdFALSE,
+                                           pdFALSE,
+                                           portMAX_DELAY);
 
     /* xEventGroupWaitBits() returns the bits before the call returned, hence we can test which event actually
      * happened. */
-    if (bits & WIFI_CONNECTED_BIT) {
+    if (bits & WIFI_CONNECTED_BIT)
+    {
         ESP_LOGI(TAG, "connected to ap SSID:%s password:%s",
                  EXAMPLE_ESP_WIFI_SSID, EXAMPLE_ESP_WIFI_PASS);
-    } else if (bits & WIFI_FAIL_BIT) {
+    }
+    else if (bits & WIFI_FAIL_BIT)
+    {
         ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s",
                  EXAMPLE_ESP_WIFI_SSID, EXAMPLE_ESP_WIFI_PASS);
-    } else {
+    }
+    else
+    {
         ESP_LOGE(TAG, "UNEXPECTED EVENT");
     }
 
@@ -432,12 +466,14 @@ void wifi_init_sta()
     vEventGroupDelete(s_wifi_event_group);
 }
 
-void start_wifi(void){
+void start_wifi(void)
+{
     //Initialize NVS
     esp_err_t ret = nvs_flash_init();
-    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-      ESP_ERROR_CHECK(nvs_flash_erase());
-      ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
+    {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
 
@@ -445,18 +481,8 @@ void start_wifi(void){
     wifi_init_sta();
 }
 
-void vTaskCode(void* pvParameters)
+void start_ethernet(void)
 {
-    for(;;)
-    {
-        // Task Code here
-        printf("%s\n", infoT.str);
-        vTaskDelay(1000/portTICK_PERIOD_MS);
-    }
-}
-
-
-void start_ethernet(void){
     // ESP_ERROR_CHECK(nvs_flash_init());
     // tcpip_adapter_init();
 
@@ -522,8 +548,7 @@ void start_ethernet(void){
         .mode = 0,
         .clock_speed_hz = CONFIG_EXAMPLE_DM9051_SPI_CLOCK_MHZ * 1000 * 1000,
         .spics_io_num = CONFIG_EXAMPLE_DM9051_CS_GPIO,
-        .queue_size = 20
-    };
+        .queue_size = 20};
     ESP_ERROR_CHECK(spi_bus_add_device(CONFIG_EXAMPLE_DM9051_SPI_HOST, &devcfg, &spi_handle));
     /* dm9051 ethernet driver is based on spi driver */
     eth_dm9051_config_t dm9051_config = ETH_DM9051_DEFAULT_CONFIG(spi_handle);
@@ -537,7 +562,54 @@ void start_ethernet(void){
     ESP_ERROR_CHECK(esp_eth_start(eth_handle));
 }
 
-void start_task_test(){
+#define U1_TXD (GPIO_NUM_4)
+#define U1_RXD (GPIO_NUM_5)
+#define NC (UART_PIN_NO_CHANGE)
+
+void vTaskCode(void *pvParameters)
+{
+    for (;;)
+    {
+        static uint8_t state = 0;
+        uart_config_t uart_config = {
+            .baud_rate = 115200,
+            .data_bits = UART_DATA_8_BITS,
+            .parity = UART_PARITY_DISABLE,
+            .stop_bits = UART_STOP_BITS_1,
+            .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+        };
+        const char msg[] = "Hello World\n\r";
+        // int len;
+        // uint8_t data[128];
+        switch (state)
+        {
+        case 0: // init state
+            uart_driver_install(UART_NUM_1, 1024, 0, 0, NULL, 0);
+            uart_param_config(UART_NUM_1, &uart_config);
+            ESP_ERROR_CHECK(uart_set_pin(UART_NUM_1, U1_TXD, U1_RXD, NC, NC));
+            // data = (malloc(1024));
+            state = 1;
+            break;
+        case 1: // work state
+            // len = uart_read_bytes(UART_NUM_2, data, 2048, 20/portTICK_RATE_MS);
+
+            uart_write_bytes(UART_NUM_1, (const char *)msg, 13);
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
+            break;
+        default:
+            break;
+        }
+    }
+    // for (;;)
+    // {
+    //     // Task Code here
+    //     printf("%s\n", infoT.str);
+    //     vTaskDelay(1000 / portTICK_PERIOD_MS);
+    // }
+}
+
+void start_task_test()
+{
     xTaskCreate(&vTaskCode, "my task 1", 1024, NULL, 5, NULL);
     sprintf(infoT.str, "Test String from Main");
 }
@@ -547,6 +619,6 @@ void app_main()
     static httpd_handle_t server = NULL;
     start_wifi();
     start_ethernet();
-    start_task_test();
+    // start_task_test();
     server = start_webserver();
 }
