@@ -2,8 +2,10 @@
 
 #include "ip_web_server.h"
 
+const char *TAG = "Jelly Fish";
+
 /* An HTTP GET handler */
-static esp_err_t hello_get_handler(httpd_req_t *req)
+esp_err_t hello_get_handler(httpd_req_t *req)
 {
     char*  buf;
     size_t buf_len;
@@ -79,7 +81,7 @@ static esp_err_t hello_get_handler(httpd_req_t *req)
 
 const char report[] = "<h1>Inderpreet - Info</h1><p>Primary CPU: ESP32</p><p>Secondary CPU: Absent</p>";
 
-static const httpd_uri_t info = {
+const httpd_uri_t info = {
     .uri       = "/info",
     .method    = HTTP_GET,
     .handler   = hello_get_handler,
@@ -89,7 +91,7 @@ static const httpd_uri_t info = {
 };
 
 /* An HTTP POST handler */
-static esp_err_t echo_post_handler(httpd_req_t *req)
+esp_err_t echo_post_handler(httpd_req_t *req)
 {
     char buf[100];
     int ret, remaining = req->content_len;
@@ -120,7 +122,7 @@ static esp_err_t echo_post_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-static const httpd_uri_t echo = {
+const httpd_uri_t echo = {
     .uri       = "/echo",
     .method    = HTTP_POST,
     .handler   = echo_post_handler,
@@ -157,7 +159,7 @@ esp_err_t http_404_error_handler(httpd_req_t *req, httpd_err_code_t err)
 /* An HTTP PUT handler. This demonstrates realtime
  * registration and deregistration of URI handlers
  */
-static esp_err_t ctrl_put_handler(httpd_req_t *req)
+esp_err_t ctrl_put_handler(httpd_req_t *req)
 {
     char buf;
     int ret;
@@ -190,14 +192,14 @@ static esp_err_t ctrl_put_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-static const httpd_uri_t ctrl = {
+const httpd_uri_t ctrl = {
     .uri       = "/ctrl",
     .method    = HTTP_PUT,
     .handler   = ctrl_put_handler,
     .user_ctx  = NULL
 };
 
-static httpd_handle_t start_webserver(void)
+httpd_handle_t start_webserver(void)
 {
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
@@ -217,13 +219,13 @@ static httpd_handle_t start_webserver(void)
     return NULL;
 }
 
-static void stop_webserver(httpd_handle_t server)
+void stop_webserver(httpd_handle_t server)
 {
     // Stop the httpd server
     httpd_stop(server);
 }
 
-static void disconnect_handler(void* arg, esp_event_base_t event_base, 
+void disconnect_handler(void* arg, esp_event_base_t event_base, 
                                int32_t event_id, void* event_data)
 {
     httpd_handle_t* server = (httpd_handle_t*) arg;
@@ -234,7 +236,7 @@ static void disconnect_handler(void* arg, esp_event_base_t event_base,
     }
 }
 
-static void connect_handler(void* arg, esp_event_base_t event_base, 
+void connect_handler(void* arg, esp_event_base_t event_base, 
                             int32_t event_id, void* event_data)
 {
     httpd_handle_t* server = (httpd_handle_t*) arg;
