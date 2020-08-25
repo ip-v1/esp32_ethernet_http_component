@@ -79,7 +79,7 @@ esp_err_t hello_get_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-const char report[] = "<h1>Inderpreet - Info</h1><p>Primary CPU: ESP32</p><p>Secondary CPU: Absent</p>";
+const char report[] = "{primary_cpu: ESP32, secondary_cpu: absent}";
 
 const httpd_uri_t info = {
     .uri       = "/info",

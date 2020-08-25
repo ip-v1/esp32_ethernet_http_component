@@ -130,4 +130,22 @@ menu "Example Configuration"
         default 1
         help
             Set PHY address according your board schematic.
+    
+    config ESP_WIFI_SSID
+        string "WiFi SSID"
+        default "ControlsDev"
+        help
+            SSID (network name) for the example to connect to.
+
+    config ESP_WIFI_PASSWORD
+        string "WiFi Password"
+        default "Blue3900"
+        help
+            WiFi password (WPA or WPA2) for the example to use.
+
+    config ESP_MAXIMUM_RETRY
+        int "Maximum retry"
+        default 5
+        help
+            Set the Maximum retry to avoid station reconnecting to the AP unlimited when the AP is really inexistent.
 endmenu

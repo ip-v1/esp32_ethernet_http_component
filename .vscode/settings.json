@@ -8,5 +8,5 @@
     "editor.quickSuggestions": true
   },
   "C_Cpp.intelliSenseEngineFallback": "Enabled",
-  "idf.portWin": "COM9"
+  "idf.portWin": "COM12"
 }
