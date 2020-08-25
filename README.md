@@ -7,7 +7,7 @@ This example demonstrates basic usage of `Ethernet driver` together with `tcpip_
 1. Install Ethernet driver
 2. Send DHCP requests and wait for a DHCP lease
 3. If get IP address successfully, then you will be able to ping the device
-4. http://<ip-address>/daddy works too
+4. http://<ip-address>/info works too
 
 If you have a new Ethernet application to go (for example, connect to IoT cloud via Ethernet), try this as a basic template, then add your own code.
 
