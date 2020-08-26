@@ -15,7 +15,14 @@
 
 const char *TAG = "Jelly Fish";
 
-/* An HTTP GET handler */
+const char report[] = "{primary_cpu: ESP32, secondary_cpu: absent}";
+
+/**
+ * @brief HTTP GET Handler
+ *
+ * @param req
+ * @return esp_err_t
+ */
 esp_err_t hello_get_handler(httpd_req_t *req) {
   char *buf;
   size_t buf_len;
@@ -83,7 +90,8 @@ esp_err_t hello_get_handler(httpd_req_t *req) {
 
   /* Send response with custom headers and body set as the
    * string passed in user context*/
-  const char *resp_str = (const char *)req->user_ctx;
+  // const char *resp_str = (const char *)req->user_ctx;
+  const char *resp_str = report;
   httpd_resp_send(req, resp_str, strlen(resp_str));
 
   /* After sending the HTTP response the old HTTP request
@@ -94,14 +102,12 @@ esp_err_t hello_get_handler(httpd_req_t *req) {
   return ESP_OK;
 }
 
-const char report[] = "{primary_cpu: ESP32, secondary_cpu: absent}";
-
 const httpd_uri_t info = {.uri = "/info",
                           .method = HTTP_GET,
                           .handler = hello_get_handler,
                           /* Let's pass response string in user
                            * context to demonstrate it's usage */
-                          .user_ctx = report};
+                          .user_ctx = NULL};
 
 /* An HTTP POST handler */
 esp_err_t echo_post_handler(httpd_req_t *req) {
@@ -140,7 +146,7 @@ const httpd_uri_t echo = {.uri = "/echo",
 
 /**
  * @brief 404 handler
- * 
+ *
  *  This handler allows the custom error handling functionality to be
  * tested from client side. For that, when a PUT request 0 is sent to
  * URI /ctrl, the /info and /echo URIs are unregistered and following
@@ -233,11 +239,11 @@ void stop_webserver(httpd_handle_t server) {
 
 /**
  * @brief Web server disconnect hander
- * 
- * @param arg 
- * @param event_base 
- * @param event_id 
- * @param event_data 
+ *
+ * @param arg
+ * @param event_base
+ * @param event_id
+ * @param event_data
  */
 void disconnect_handler(void *arg, esp_event_base_t event_base,
                         int32_t event_id, void *event_data) {
@@ -251,11 +257,11 @@ void disconnect_handler(void *arg, esp_event_base_t event_base,
 
 /**
  * @brief Web server connection handler
- * 
- * @param arg 
- * @param event_base 
- * @param event_id 
- * @param event_data 
+ *
+ * @param arg
+ * @param event_base
+ * @param event_id
+ * @param event_data
  */
 void connect_handler(void *arg, esp_event_base_t event_base, int32_t event_id,
                      void *event_data) {
