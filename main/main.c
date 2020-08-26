@@ -4,37 +4,36 @@
  * @brief This is the entry point code for the ESP32 Web server over ethernet
  * @version 0.1
  * @date 2020-08-12
- * 
+ *
  * @copyright Copyright (c) 2020
- * 
+ *
  */
-#include <stdio.h>
-#include <string.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/event_groups.h"
-#include "tcpip_adapter.h"
+#include "driver/gpio.h"
 #include "esp_eth.h"
 #include "esp_event.h"
 #include "esp_log.h"
-#include "driver/gpio.h"
-#include "sdkconfig.h"
-#include <esp_system.h>
-#include <nvs_flash.h>
-#include <sys/param.h>
-#include "nvs_flash.h"
-#include "tcpip_adapter.h"
 #include "esp_wifi.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
+#include "freertos/task.h"
 #include "lwip/err.h"
 #include "lwip/sys.h"
+#include "nvs_flash.h"
+#include "sdkconfig.h"
+#include "tcpip_adapter.h"
+#include <esp_system.h>
+#include <nvs_flash.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/param.h>
 
 #include <esp_http_server.h>
 
-#include "driver/uart.h"
-
 #include <ip_web_server.h>
+#include <uart_comms.h>
 
-/* The examples use WiFi configuration that you can set via project configuration menu
+/* The examples use WiFi configuration that you can set via project
+   configuration menu
 
    If you'd rather not, just change the below entries to strings with
    the config you want - ie #define EXAMPLE_WIFI_SSID "mywifissid"
@@ -46,7 +45,8 @@
 /* FreeRTOS event group to signal when we are connected*/
 static EventGroupHandle_t s_wifi_event_group;
 
-/* The event group allows multiple bits for each event, but we only care about two events:
+/* The event group allows multiple bits for each event, but we only care about
+ * two events:
  * - we are connected to the AP with an IP
  * - we failed to connect after the maximum amount of retries */
 #define WIFI_CONNECTED_BIT BIT0
@@ -58,34 +58,20 @@ static int s_retry_num = 0;
 
 static const char *TAG = "Jelly Fish";
 
-typedef struct _InfoT
-{
-    char sof;
-    char ver[3];
-    char str[64];
-} InfoT;
-
-InfoT infoT;
-
-const char info_page[] = "Test Info Message";
-
 // static const char *TAG = "eth_example";
 
 /** Event handler for Ethernet events */
-static void eth_event_handler(void *arg, esp_event_base_t event_base,
-                              int32_t event_id, void *event_data)
-{
+static void eth_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
     uint8_t mac_addr[6] = {0};
     /* we can get the ethernet driver handle from event data */
     esp_eth_handle_t eth_handle = *(esp_eth_handle_t *)event_data;
 
-    switch (event_id)
-    {
+    switch (event_id) {
     case ETHERNET_EVENT_CONNECTED:
         esp_eth_ioctl(eth_handle, ETH_CMD_G_MAC_ADDR, mac_addr);
         ESP_LOGI(TAG, "Ethernet Link Up");
-        ESP_LOGI(TAG, "Ethernet HW Addr %02x:%02x:%02x:%02x:%02x:%02x",
-                 mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
+        ESP_LOGI(TAG, "Ethernet HW Addr %02x:%02x:%02x:%02x:%02x:%02x", mac_addr[0], mac_addr[1], mac_addr[2],
+                 mac_addr[3], mac_addr[4], mac_addr[5]);
         break;
     case ETHERNET_EVENT_DISCONNECTED:
         ESP_LOGI(TAG, "Ethernet Link Down");
@@ -102,9 +88,7 @@ static void eth_event_handler(void *arg, esp_event_base_t event_base,
 }
 
 /** Event handler for IP_EVENT_ETH_GOT_IP */
-static void got_ip_event_handler(void *arg, esp_event_base_t event_base,
-                                 int32_t event_id, void *event_data)
-{
+static void got_ip_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
     ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
     const tcpip_adapter_ip_info_t *ip_info = &event->ip_info;
 
@@ -116,39 +100,27 @@ static void got_ip_event_handler(void *arg, esp_event_base_t event_base,
     ESP_LOGI(TAG, "~~~~~~~~~~~");
 }
 
-static void event_handler(void *arg, esp_event_base_t event_base,
-                          int32_t event_id, void *event_data)
-{
-    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START)
-    {
+static void event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
+    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
         esp_wifi_connect();
-    }
-    else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
-    {
-        if (s_retry_num < EXAMPLE_ESP_MAXIMUM_RETRY)
-        {
+    } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
+        if (s_retry_num < EXAMPLE_ESP_MAXIMUM_RETRY) {
             esp_wifi_connect();
             s_retry_num++;
             ESP_LOGI(TAG, "retry to connect to the AP");
-        }
-        else
-        {
+        } else {
             xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
         }
         ESP_LOGI(TAG, "connect to the AP fail");
-    }
-    else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
-    {
+    } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
-        ESP_LOGI(TAG, "got ip:%s",
-                 ip4addr_ntoa(&event->ip_info.ip));
+        ESP_LOGI(TAG, "got ip:%s", ip4addr_ntoa(&event->ip_info.ip));
         s_retry_num = 0;
         xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
     }
 }
 
-void wifi_init_sta()
-{
+void wifi_init_sta() {
     s_wifi_event_group = xEventGroupCreate();
 
     tcpip_adapter_init();
@@ -162,13 +134,12 @@ void wifi_init_sta()
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler, NULL));
 
     wifi_config_t wifi_config = {
-        .sta = {
-            .ssid = EXAMPLE_ESP_WIFI_SSID,
-            .password = EXAMPLE_ESP_WIFI_PASS,
-            .pmf_cfg = {
-                .capable = true,
-                .required = false},
-        },
+        .sta =
+            {
+                .ssid = EXAMPLE_ESP_WIFI_SSID,
+                .password = EXAMPLE_ESP_WIFI_PASS,
+                .pmf_cfg = {.capable = true, .required = false},
+            },
     };
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
@@ -176,28 +147,19 @@ void wifi_init_sta()
 
     ESP_LOGI(TAG, "wifi_init_sta finished.");
 
-    /* Waiting until either the connection is established (WIFI_CONNECTED_BIT) or connection failed for the maximum
-     * number of re-tries (WIFI_FAIL_BIT). The bits are set by event_handler() (see above) */
-    EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group,
-                                           WIFI_CONNECTED_BIT | WIFI_FAIL_BIT,
-                                           pdFALSE,
-                                           pdFALSE,
-                                           portMAX_DELAY);
+    /* Waiting until either the connection is established (WIFI_CONNECTED_BIT) or
+     * connection failed for the maximum number of re-tries (WIFI_FAIL_BIT). The
+     * bits are set by event_handler() (see above) */
+    EventBits_t bits =
+        xEventGroupWaitBits(s_wifi_event_group, WIFI_CONNECTED_BIT | WIFI_FAIL_BIT, pdFALSE, pdFALSE, portMAX_DELAY);
 
-    /* xEventGroupWaitBits() returns the bits before the call returned, hence we can test which event actually
-     * happened. */
-    if (bits & WIFI_CONNECTED_BIT)
-    {
-        ESP_LOGI(TAG, "connected to ap SSID:%s password:%s",
-                 EXAMPLE_ESP_WIFI_SSID, EXAMPLE_ESP_WIFI_PASS);
-    }
-    else if (bits & WIFI_FAIL_BIT)
-    {
-        ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s",
-                 EXAMPLE_ESP_WIFI_SSID, EXAMPLE_ESP_WIFI_PASS);
-    }
-    else
-    {
+    /* xEventGroupWaitBits() returns the bits before the call returned, hence we
+     * can test which event actually happened. */
+    if (bits & WIFI_CONNECTED_BIT) {
+        ESP_LOGI(TAG, "connected to ap SSID:%s password:%s", EXAMPLE_ESP_WIFI_SSID, EXAMPLE_ESP_WIFI_PASS);
+    } else if (bits & WIFI_FAIL_BIT) {
+        ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s", EXAMPLE_ESP_WIFI_SSID, EXAMPLE_ESP_WIFI_PASS);
+    } else {
         ESP_LOGE(TAG, "UNEXPECTED EVENT");
     }
 
@@ -206,12 +168,10 @@ void wifi_init_sta()
     vEventGroupDelete(s_wifi_event_group);
 }
 
-void start_wifi(void)
-{
-    //Initialize NVS
+void start_wifi(void) {
+    // Initialize NVS
     esp_err_t ret = nvs_flash_init();
-    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
-    {
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         ESP_ERROR_CHECK(nvs_flash_erase());
         ret = nvs_flash_init();
     }
@@ -221,22 +181,22 @@ void start_wifi(void)
     wifi_init_sta();
 }
 
-void start_ethernet(void)
-{
+void start_ethernet(void) {
     // ESP_ERROR_CHECK(nvs_flash_init());
     // tcpip_adapter_init();
 
-    // uncomment this line if not using wifi because this must be run exactly once else all hell breaks loose.
+    // uncomment this line if not using wifi because this must be run exactly once
+    // else all hell breaks loose.
     // ESP_ERROR_CHECK(esp_event_loop_create_default());
 
-    /* This helper function configures Wi-Fi or Ethernet, as selected in menuconfig.
-     * Read "Establishing Wi-Fi or Ethernet Connection" section in
+    /* This helper function configures Wi-Fi or Ethernet, as selected in
+     * menuconfig. Read "Establishing Wi-Fi or Ethernet Connection" section in
      * examples/protocols/README.md for more information about this function.
      */
     // ESP_ERROR_CHECK(example_connect());
 
-    /* Register event handlers to stop the server when Wi-Fi or Ethernet is disconnected,
-     * and re-start it upon connection.
+    /* Register event handlers to stop the server when Wi-Fi or Ethernet is
+     * disconnected, and re-start it upon connection.
      */
 #ifdef CONFIG_EXAMPLE_CONNECT_WIFI
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &connect_handler, &server));
@@ -282,13 +242,12 @@ void start_ethernet(void)
         .quadhd_io_num = -1,
     };
     ESP_ERROR_CHECK(spi_bus_initialize(CONFIG_EXAMPLE_DM9051_SPI_HOST, &buscfg, 1));
-    spi_device_interface_config_t devcfg = {
-        .command_bits = 1,
-        .address_bits = 7,
-        .mode = 0,
-        .clock_speed_hz = CONFIG_EXAMPLE_DM9051_SPI_CLOCK_MHZ * 1000 * 1000,
-        .spics_io_num = CONFIG_EXAMPLE_DM9051_CS_GPIO,
-        .queue_size = 20};
+    spi_device_interface_config_t devcfg = {.command_bits = 1,
+                                            .address_bits = 7,
+                                            .mode = 0,
+                                            .clock_speed_hz = CONFIG_EXAMPLE_DM9051_SPI_CLOCK_MHZ * 1000 * 1000,
+                                            .spics_io_num = CONFIG_EXAMPLE_DM9051_CS_GPIO,
+                                            .queue_size = 20};
     ESP_ERROR_CHECK(spi_bus_add_device(CONFIG_EXAMPLE_DM9051_SPI_HOST, &devcfg, &spi_handle));
     /* dm9051 ethernet driver is based on spi driver */
     eth_dm9051_config_t dm9051_config = ETH_DM9051_DEFAULT_CONFIG(spi_handle);
@@ -302,58 +261,7 @@ void start_ethernet(void)
     ESP_ERROR_CHECK(esp_eth_start(eth_handle));
 }
 
-#define U1_TXD (GPIO_NUM_4)
-#define U1_RXD (GPIO_NUM_2)
-#define NC (UART_PIN_NO_CHANGE)
-
-void vTaskCode(void *pvParameters)
-{
-    // uint8_t data* = malloc(1024);
-    for (;;)
-    {
-        static uint8_t state = 0;
-        uart_config_t uart_config = {
-            .baud_rate = 115200,
-            .data_bits = UART_DATA_8_BITS,
-            .parity = UART_PARITY_DISABLE,
-            .stop_bits = UART_STOP_BITS_1,
-            .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-        };
-        const char msg[] = "Hello World\n\r";
-        // int len;
-        switch (state)
-        {
-        case 0: // init state
-            uart_driver_install(UART_NUM_1, 2048, 0, 0, NULL, 0);
-            uart_param_config(UART_NUM_1, &uart_config);
-            ESP_ERROR_CHECK(uart_set_pin(UART_NUM_1, U1_TXD, U1_RXD, NC, NC));
-            state = 1;
-            break;
-        case 1: // work state
-            // len = uart_read_bytes(UART_NUM_2, data, 1024, 20/portTICK_RATE_MS);
-            uart_write_bytes(UART_NUM_1, (const char *)msg, 13);
-            vTaskDelay(1000 / portTICK_PERIOD_MS);
-            break;
-        default:
-            break;
-        }
-    }
-    // for (;;)
-    // {
-    //     // Task Code here
-    //     printf("%s\n", infoT.str);
-    //     vTaskDelay(1000 / portTICK_PERIOD_MS);
-    // }
-}
-
-void start_task_test()
-{
-    xTaskCreate(&vTaskCode, "my task 1", 2048, NULL, 5, NULL);
-    sprintf(infoT.str, "Test String from Main");
-}
-
-void app_main()
-{
+void app_main() {
     static httpd_handle_t server = NULL;
     start_wifi();
     start_ethernet();

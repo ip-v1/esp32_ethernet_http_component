@@ -1,4 +1,4 @@
-idf_component_register(SRCS "ethernet_example_main.c" 
+idf_component_register(SRCS "main.c" 
                        INCLUDE_DIRS "." ""
-                       REQUIRES esp_http_server nvs_flash ip_web_server
+                       REQUIRES esp_http_server nvs_flash ip_web_server uart_comms
                        )

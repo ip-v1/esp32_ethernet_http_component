@@ -18,8 +18,6 @@
 
 #include <esp_http_server.h>
 
-
-
 esp_err_t hello_get_handler(httpd_req_t *req);
 esp_err_t echo_post_handler(httpd_req_t *req);
 esp_err_t http_404_error_handler(httpd_req_t *req, httpd_err_code_t err);
