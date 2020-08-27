@@ -1,3 +1,3 @@
 idf_component_register(SRCS "ip_web_server.c"
                        INCLUDE_DIRS "."
-                       REQUIRES esp_http_server nvs_flash)
+                       REQUIRES esp_http_server nvs_flash data_share)

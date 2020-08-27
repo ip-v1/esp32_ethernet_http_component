@@ -1,4 +1,5 @@
 #include "uart_comms.h"
+#include <data_share.h>
 #include <stdio.h>
 
 typedef struct _InfoT {

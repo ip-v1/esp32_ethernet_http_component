@@ -15,7 +15,7 @@
 
 const char *TAG = "Jelly Fish";
 
-const char report[] = "{primary_cpu: ESP32, secondary_cpu: absent}";
+// const char report[] = "{primary_cpu: ESP32, secondary_cpu: absent}";
 
 /**
  * @brief HTTP GET Handler
@@ -91,7 +91,7 @@ esp_err_t hello_get_handler(httpd_req_t *req) {
   /* Send response with custom headers and body set as the
    * string passed in user context*/
   // const char *resp_str = (const char *)req->user_ctx;
-  const char *resp_str = report;
+  const char *resp_str = (const char *)get_data_share();
   httpd_resp_send(req, resp_str, strlen(resp_str));
 
   /* After sending the HTTP response the old HTTP request
