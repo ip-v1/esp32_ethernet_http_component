@@ -42,11 +42,12 @@ void set_data_share(char *data, unsigned char size) {
 void setup_trigger_pin(void) {
   gpio_reset_pin(TRIG_PIN);
   gpio_set_direction(TRIG_PIN, GPIO_MODE_OUTPUT);
+  gpio_set_level(TRIG_PIN, 1);
 }
 
 void trigger_io(void) {
   vTaskDelay(500 / portTICK_PERIOD_MS);
-  gpio_set_level(TRIG_PIN, 1);
-  vTaskDelay(500 / portTICK_PERIOD_MS);
   gpio_set_level(TRIG_PIN, 0);
+  vTaskDelay(250 / portTICK_PERIOD_MS);
+  gpio_set_level(TRIG_PIN, 1);
 }
