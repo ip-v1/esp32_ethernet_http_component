@@ -12,8 +12,6 @@ InfoT infoT;
 
 void vTaskCode(void *pvParameters) {
   // uint8_t data* = malloc(1024);
-  gpio_reset_pin(SCL1_PIN);
-  gpio_set_direction(SCL1_PIN, GPIO_MODE_OUTPUT);
 
   for (;;) {
     static uint8_t state = 0;
@@ -35,11 +33,8 @@ void vTaskCode(void *pvParameters) {
       break;
     case 1: // work state
       // len = uart_read_bytes(UART_NUM_2, data, 1024, 20/portTICK_RATE_MS);
-      uart_write_bytes(UART_NUM_1, (const char *)msg, 13);
-      vTaskDelay(500 / portTICK_PERIOD_MS);
-      gpio_set_level(SCL1_PIN, 1);
-      vTaskDelay(500 / portTICK_PERIOD_MS);
-      gpio_set_level(SCL1_PIN, 0);
+      // uart_write_bytes(UART_NUM_1, (const char *)msg, 13);
+      vTaskDelay(1000 / portTICK_PERIOD_MS);
       break;
     default:
       break;

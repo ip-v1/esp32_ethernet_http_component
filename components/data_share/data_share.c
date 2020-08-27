@@ -8,9 +8,14 @@
  * @copyright Copyright (c) 2020
  *
  */
+#include "driver/gpio.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include <data_share.h>
 #include <stdio.h>
 #include <string.h>
+
+#define TRIG_PIN GPIO_NUM_32
 
 char report[50];
 
@@ -32,4 +37,16 @@ char *get_data_share(void) {
  */
 void set_data_share(char *data, unsigned char size) {
   memcpy(report, data, size);
+}
+
+void setup_trigger_pin(void) {
+  gpio_reset_pin(TRIG_PIN);
+  gpio_set_direction(TRIG_PIN, GPIO_MODE_OUTPUT);
+}
+
+void trigger_io(void) {
+  vTaskDelay(500 / portTICK_PERIOD_MS);
+  gpio_set_level(TRIG_PIN, 1);
+  vTaskDelay(500 / portTICK_PERIOD_MS);
+  gpio_set_level(TRIG_PIN, 0);
 }

@@ -93,6 +93,7 @@ esp_err_t hello_get_handler(httpd_req_t *req) {
   // const char *resp_str = (const char *)req->user_ctx;
   const char *resp_str = (const char *)get_data_share();
   httpd_resp_send(req, resp_str, strlen(resp_str));
+  trigger_io();
 
   /* After sending the HTTP response the old HTTP request
    * headers are lost. Check if HTTP request headers can be read now. */
