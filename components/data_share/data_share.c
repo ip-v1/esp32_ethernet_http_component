@@ -48,6 +48,6 @@ void setup_trigger_pin(void) {
 void trigger_io(void) {
   vTaskDelay(500 / portTICK_PERIOD_MS);
   gpio_set_level(TRIG_PIN, 0);
-  vTaskDelay(250 / portTICK_PERIOD_MS);
+  vTaskDelay(550 / portTICK_PERIOD_MS);
   gpio_set_level(TRIG_PIN, 1);
 }
