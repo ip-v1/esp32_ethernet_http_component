@@ -284,9 +284,9 @@ void start_ethernet(void) {
 
 void app_main() {
   static httpd_handle_t server = NULL;
-  setup_trigger_pin();
   start_wifi();
   start_ethernet();
-  start_task_test();
+  // start_task_test();
+  start_task_control();
   server = start_webserver();
 }
