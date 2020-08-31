@@ -3,8 +3,9 @@
 
 typedef struct _Status {
   char sof;
-  char sensorStateString[14];  // Sensor State:
-  char sensorState;            // 0 or 1
+  char sensorStateString[14]; // Sensor State:
+  char sensorState;           // 0 or 1
+  char c1;
   char triggerCountString[15]; // Trigger Count:
   char triggerCount[4];        // 0000
   char eof;

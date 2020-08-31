@@ -26,6 +26,7 @@ Status status;
 Status *get_status(void) { return &status; }
 
 char report[50];
+char tmp[5];
 
 /**
  * @brief Get the data share object
@@ -52,8 +53,8 @@ void setup_ios(void) {
   gpio_set_direction(TRIG_PIN, GPIO_MODE_OUTPUT);
   gpio_set_level(TRIG_PIN, 1);
 
-  // gpio_reset_pin(SENSOR_PIN);
-  // gpio_set_direction(SENSOR_PIN, GPIO_MODE_INPUT);
+  gpio_reset_pin(SENSOR_PIN);
+  gpio_set_direction(SENSOR_PIN, GPIO_MODE_INPUT);
 }
 
 void trigger_io(void) {
@@ -88,6 +89,8 @@ char read_sensor_gpio() {
 void control_task(void *pvParameters) {
   for (;;) {
     status.sensorState = read_sensor_gpio();
+    sprintf(tmp, "%04d", trigger_count);
+    memcpy(status.triggerCount, tmp, 4);
     vTaskDelay(25 / portTICK_PERIOD_MS);
   }
 }
@@ -97,8 +100,9 @@ void start_task_control() {
   status.sof = '{';
   strcpy(status.sensorStateString, "Sensor State: ");
   status.sensorState = '1';
+  status.c1 = ',';
   strcpy(status.triggerCountString, "Trigger Count: ");
   strcpy(status.triggerCount, "0000");
   status.eof = '}';
-  xTaskCreate(&control_task, "Control Task", 512, NULL, 5, NULL);
+  xTaskCreate(&control_task, "Control Task", 2048, NULL, 5, NULL);
 }
